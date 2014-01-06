@@ -12,6 +12,6 @@
   },
     
   "permissions" : [
-     "notifications", "http://*/*"
+     "notifications", "http://*/*" , "storage"
   ]
 }
