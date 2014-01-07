@@ -84,17 +84,29 @@ function listMatches_(result) {
 
 function showNotification(options) {
 	chrome.notifications.create("id" + notID++, options, creationCallback_);
-	chrome.notifications.onClicked.addListener(function() {
-		console.log(link);
-		window.open(options.link);
+	chrome.notifications.onClicked.addListener(function(notID) {
+		console.log(notID);
+		console.log(options.link);
+		// window.location(options.link);
+		chrome.app.window.create("view.html", {
+			id : "viewWindow",
+			bounds : {
+				width : 600,
+				height : 400
+			}
+		});
+		/*
+		 * chrome.tabs.create(options.link, function(tab){ console.log("tab--->" +
+		 * tab); });
+		 */
 	});
 }
 
-function openTab(url) { 
-    var a = document.createElement('a'); 
-    a.href = url; 
-    a.target='_blank'; 
-    a.click(); 
+function openTab(url) {
+	var a = document.createElement('a');
+	a.href = url;
+	a.target = '_blank';
+	a.click();
 }
 
 function getImageSynchronousReq(imageLink, options) {
@@ -123,5 +135,5 @@ $(document).ready(function() {
 
 function doSomething() {
 	requestScores();
-	setInterval(requestScores, 60000);
+	setInterval(requestScores, 3600000);
 }
