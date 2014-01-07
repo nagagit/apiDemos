@@ -12,6 +12,6 @@
   },
     
   "permissions" : [
-     "notifications", "http://*/*" , "storage"
+     "notifications", "http://*/*" , "storage", "app.window", "webview"
   ]
 }

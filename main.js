@@ -59,34 +59,35 @@ function listMatches_(result) {
 	var $singleItem = null;
 	var imageLink = null;
 	var options = null;
+	var feedLink = null;
 	$(result).find('item').each(function() {
 		$singleItem = $(this);
 		title = $singleItem.find('title').text();
 		imageLink = $singleItem.find('media\\:content, content').attr('url');
-		link = $singleItem.find('link').text();
+		feedLink = $singleItem.find('link').text();
 		if (imageLink != null && imageLink != 'undefined') {
 			options = notOptions_[1];
 			options.iconUrl = chrome.runtime.getURL("icon.png");
 			options.title = "";
 			options.message = title;
-			getImageSynchronousReq(imageLink, options);
+			getImageSynchronousReq(imageLink, options, feedLink);
 		} else {
 			options = notOptions_[0];
 			options.iconUrl = chrome.runtime.getURL("icon.png");
 			options.title = "";
 			options.message = title;
-			showNotification(options);
+			showNotification(options, feedLink);
 		}
 		options = null;
 	});
 
 };
 
-function showNotification(options) {
+function showNotification(options, feedLink) {
 	chrome.notifications.create("id" + notID++, options, creationCallback_);
 	chrome.notifications.onClicked.addListener(function(notID) {
 		console.log(notID);
-		console.log(options.link);
+		console.log(feedLink);
 		// window.location(options.link);
 		chrome.app.window.create("view.html", {
 			id : "viewWindow",
@@ -94,6 +95,13 @@ function showNotification(options) {
 				width : 600,
 				height : 400
 			}
+		}, function(createdWindow) {
+			createdWindow.contentWindow.onload = function(){
+				newwindow.contentWindow.document.getElementById('myWebView').src = feedLink;
+				newwindow.contentWindow.location.reload();
+			};
+			/*doc.getElementById('#myWebView').src = feedLink;
+			doc.body.appendChild(myWebView);*/
 		});
 		/*
 		 * chrome.tabs.create(options.link, function(tab){ console.log("tab--->" +
@@ -109,7 +117,7 @@ function openTab(url) {
 	a.click();
 }
 
-function getImageSynchronousReq(imageLink, options) {
+function getImageSynchronousReq(imageLink, options, feedLink) {
 	var img = null;
 	var xhr = new XMLHttpRequest();
 	xhr.overrideMimeType("image/png");
@@ -120,7 +128,7 @@ function getImageSynchronousReq(imageLink, options) {
 		img.src = window.webkitURL.createObjectURL(this.response);
 		options.imageUrl = img.src;
 		console.log(options.imageUrl);
-		showNotification(options);
+		showNotification(options, feedLink);
 	};
 	xhr.send();
 }
