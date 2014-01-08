@@ -97,8 +97,8 @@ function showNotification(options, feedLink) {
 			}
 		}, function(createdWindow) {
 			createdWindow.contentWindow.onload = function(){
-				newwindow.contentWindow.document.getElementById('myWebView').src = feedLink;
-				newwindow.contentWindow.location.reload();
+				createdWindow.contentWindow.document.getElementById('myWebView').src = feedLink;
+				//createdWindow.contentWindow.location.reload();
 			};
 			/*doc.getElementById('#myWebView').src = feedLink;
 			doc.body.appendChild(myWebView);*/
