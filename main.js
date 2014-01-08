@@ -9,6 +9,8 @@
  */
 var fetchLiveScores_ = "http://pipes.yahoo.com/pipes/pipe.run?_id=KHkpIfCz3BGVw853JxOy0Q&_render=rss";
 var notID = 0;
+var feedLinks = [];
+var notificationId = null;
 
 // List of sample notifications. These are further customized
 // in the code according the UI settings.
@@ -84,30 +86,9 @@ function listMatches_(result) {
 };
 
 function showNotification(options, feedLink) {
-	chrome.notifications.create("id" + notID++, options, creationCallback_);
-	chrome.notifications.onClicked.addListener(function(notID) {
-		console.log(notID);
-		console.log(feedLink);
-		// window.location(options.link);
-		chrome.app.window.create("view.html", {
-			id : "viewWindow",
-			bounds : {
-				width : 600,
-				height : 400
-			}
-		}, function(createdWindow) {
-			createdWindow.contentWindow.onload = function(){
-				createdWindow.contentWindow.document.getElementById('myWebView').src = feedLink;
-				//createdWindow.contentWindow.location.reload();
-			};
-			/*doc.getElementById('#myWebView').src = feedLink;
-			doc.body.appendChild(myWebView);*/
-		});
-		/*
-		 * chrome.tabs.create(options.link, function(tab){ console.log("tab--->" +
-		 * tab); });
-		 */
-	});
+	notificationId = "id" + notID++;
+	chrome.notifications.create(notificationId, options, creationCallback_);
+	feedLinks[notificationId] = feedLink;
 }
 
 function openTab(url) {
@@ -138,7 +119,36 @@ function creationCallback_(notID) {
 }
 
 $(document).ready(function() {
+	var flag = false;
 	document.getElementById("sample").addEventListener("click", doSomething);
+	chrome.notifications.onClicked.addListener(function(notID) {
+		chrome.app.window.create("view.html", {
+			id : "viewWindow",
+			bounds : {
+				width : 600,
+				height : 400
+			}
+		}, function(createdWindow) {
+			createdWindow.contentWindow.onload = function(){
+			createdWindow.contentWindow.document.getElementById('myWebView').src = feedLinks[notID];
+			flag = true;
+				//createdWindow.contentWindow.location.reload();
+			};
+			/*doc.getElementById('#myWebView').src = feedLink;
+			doc.body.appendChild(myWebView);*/
+		});
+		if(!flag){
+			chrome.app.window.contentWindow.onload = function(){
+				createdWindow.contentWindow.document.getElementById('myWebView').src = feedLinks[notID];
+				flag = true;
+					//createdWindow.contentWindow.location.reload();
+				};
+		}
+		/*
+		 * chrome.tabs.create(options.link, function(tab){ console.log("tab--->" +
+		 * tab); });
+		 */
+	});
 });
 
 function doSomething() {
