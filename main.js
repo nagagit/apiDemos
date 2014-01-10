@@ -118,38 +118,64 @@ function creationCallback_(notID) {
 	console.log("Succesfully created " + notID + " notification");
 }
 
-$(document).ready(function() {
-	var flag = false;
-	document.getElementById("sample").addEventListener("click", doSomething);
-	chrome.notifications.onClicked.addListener(function(notID) {
-		chrome.app.window.create("view.html", {
-			id : "viewWindow",
-			bounds : {
-				width : 600,
-				height : 400
-			}
-		}, function(createdWindow) {
-			createdWindow.contentWindow.onload = function(){
-			createdWindow.contentWindow.document.getElementById('myWebView').src = feedLinks[notID];
-			flag = true;
-				//createdWindow.contentWindow.location.reload();
-			};
-			/*doc.getElementById('#myWebView').src = feedLink;
-			doc.body.appendChild(myWebView);*/
-		});
-		if(!flag){
-			chrome.app.window.contentWindow.onload = function(){
-				createdWindow.contentWindow.document.getElementById('myWebView').src = feedLinks[notID];
-				flag = true;
-					//createdWindow.contentWindow.location.reload();
-				};
-		}
-		/*
-		 * chrome.tabs.create(options.link, function(tab){ console.log("tab--->" +
-		 * tab); });
-		 */
-	});
-});
+$(document)
+		.ready(
+				function() {
+					var webView = null;
+					var indicator = null;
+					var loadstart = null;
+					var loadstop = null;
+					document.getElementById("sample").addEventListener("click",
+							doSomething);
+					chrome.notifications.onClicked
+							.addListener(function(notID) {
+								if (webView == null) {
+									chrome.app.window
+											.create(
+													"view.html",
+													{
+														id : "viewWindow",
+														bounds : {
+															width : 600,
+															height : 400
+														}
+													},
+													function(createdWindow) {
+														createdWindow.contentWindow.onload = function() {
+															createdWindow.contentWindow.document
+																	.getElementById('myWebView').src = feedLinks[notID];
+															webView = createdWindow;
+														};
+													});
+								} else {
+									webView.contentWindow.document
+											.getElementById('myWebView').src = feedLinks[notID];
+									webView.contentWindow.location.reload;
+								}
+								if (webView != null) {
+									webView.contentWindow.addEventListener(
+											"loadstart", showLoading(webView));
+									webView.contentWindow.addEventListener(
+											"loadstop", stopLoading(webView));
+									webView
+											.onClosed(triggerDuringClose(webView));
+								}
+							});
+				});
+
+function showLoading(webView) {
+	webView.contentWindow.document.getElementById("myWebView").style.display = "none";
+	webView.contentWindow.document.getElementById("loadingSpan").innerText = "loading...";
+}
+
+function stopLoading(webView) {
+	webView.contentWindow.document.getElementById("loadingSpan").innerText = "";
+	webView.contentWindow.document.getElementById("myWebView").style.display = "block";
+}
+
+function triggerDuringClose(webView) {
+	webView.contentWindow.document.getElementById('myWebView').src = 'about:blank';
+}
 
 function doSomething() {
 	requestScores();
