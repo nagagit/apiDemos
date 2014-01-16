@@ -11,6 +11,8 @@ var fetchLiveScores_ = "http://pipes.yahoo.com/pipes/pipe.run?_id=KHkpIfCz3BGVw8
 var notID = 0;
 var feedLinks = [];
 var notificationId = null;
+var viewWindow = null;
+var webView = null;
 
 // List of sample notifications. These are further customized
 // in the code according the UI settings.
@@ -118,63 +120,74 @@ function creationCallback_(notID) {
 	console.log("Succesfully created " + notID + " notification");
 }
 
-$(document)
-		.ready(
-				function() {
-					var webView = null;
-					var indicator = null;
-					var loadstart = null;
-					var loadstop = null;
-					document.getElementById("sample").addEventListener("click",
-							doSomething);
-					chrome.notifications.onClicked
-							.addListener(function(notID) {
-								if (webView == null) {
-									chrome.app.window
-											.create(
-													"view.html",
-													{
-														id : "viewWindow",
-														bounds : {
-															width : 600,
-															height : 400
-														}
-													},
-													function(createdWindow) {
-														createdWindow.contentWindow.onload = function() {
-															createdWindow.contentWindow.document
-																	.getElementById('myWebView').src = feedLinks[notID];
-															webView = createdWindow;
-														};
-													});
-								} else {
-									webView.contentWindow.document
-											.getElementById('myWebView').src = feedLinks[notID];
-									webView.contentWindow.location.reload;
-								}
-								if (webView != null) {
-									webView.contentWindow.addEventListener(
-											"loadstart", showLoading(webView));
-									webView.contentWindow.addEventListener(
-											"loadstop", stopLoading(webView));
-									webView
-											.onClosed(triggerDuringClose(webView));
-								}
+$(document).ready(
+		function() {
+			document.getElementById("sample").addEventListener("click",
+					doSomething);
+			chrome.notifications.onClicked.addListener(createViewWindow);
+			onload = function() {
+				webView = viewWindow.contentWindow.document
+						.getElementById('myWebView');
+				webView.addEventListener("loadstart", showLoading);
+				webView.addEventListener("loadstop", stopLoading);
+			};
+		});
+
+function createViewWindow(notID) {
+	chrome.app.window
+			.create(
+					"view.html",
+					{
+						id : "viewWindow",
+						bounds : {
+							width : 600,
+							height : 400
+						}
+					},
+					function(createdWindow) {
+						createdWindow.contentWindow.onload = function() {
+							createdWindow.contentWindow.document
+									.getElementById('myWebView').src = feedLinks[notID];
+							viewWindow = createdWindow;
+							viewWindow.onClosed.addListener(function() {
+								viewWindow = null;
 							});
-				});
+						};
+					});
 
-function showLoading(webView) {
-	webView.contentWindow.document.getElementById("myWebView").style.display = "none";
-	webView.contentWindow.document.getElementById("loadingSpan").innerText = "loading...";
+	if (viewWindow != null && viewWindow != 'undefined') {
+		if (webView != null && webView != 'undefined') {
+			webView.src = feedLinks[notID];
+		} else {
+			webView = viewWindow.contentWindow.document
+					.getElementById('myWebView');
+			webView.src = feedLinks[notID];
+		}
+	}
 }
 
-function stopLoading(webView) {
-	webView.contentWindow.document.getElementById("loadingSpan").innerText = "";
-	webView.contentWindow.document.getElementById("myWebView").style.display = "block";
+function showLoading(event) {
+	if (event.currentTarget.getAttribute('id') == 'myWebView'
+			&& !event.isTopLevel && event.url == webView.src) {
+		webView.style.display = 'none';
+		// viewWindow.contentWindow.document.getElementById('spanImg').style.display
+		// = 'inline';
+		viewWindow.contentWindow.document.getElementById('spanImg').innerText = 'LOADING>>>>>>>>>';
+	}
 }
 
-function triggerDuringClose(webView) {
-	webView.contentWindow.document.getElementById('myWebView').src = 'about:blank';
+function stopLoading(event) {
+	if (event.currentTarget.getAttribute('id') == 'myWebView'
+			&& !event.isTopLevel && event.url == webView.src) {
+		// viewWindow.contentWindow.document.getElementById('spanImg').style.display
+		// = 'none';
+		webView.style.display = 'inline';
+		viewWindow.contentWindow.document.getElementById('spanImg').innerText = '';
+	}
+}
+
+function closeWindow(viewWindow) {
+	console.log(viewWindow);
 }
 
 function doSomething() {
