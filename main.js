@@ -9,10 +9,11 @@
  */
 var fetchLiveScores_ = "http://pipes.yahoo.com/pipes/pipe.run?_id=KHkpIfCz3BGVw853JxOy0Q&_render=rss";
 var notID = 0;
-var feedLinks = [];
 var notificationId = null;
+var feedLinks = [];
 var viewWindow = null;
 var webView = null;
+var optionsArray = [];
 
 // List of sample notifications. These are further customized
 // in the code according the UI settings.
@@ -59,38 +60,51 @@ function requestScores() {
  * @private
  */
 function listMatches_(result) {
-	var title = null;
+	var messageVal = null;
 	var $singleItem = null;
 	var imageLink = null;
 	var options = null;
 	var feedLink = null;
 	$(result).find('item').each(function() {
 		$singleItem = $(this);
-		title = $singleItem.find('title').text();
+		messageVal = $singleItem.find('title').text();
+		console.log(messageVal);
 		imageLink = $singleItem.find('media\\:content, content').attr('url');
 		feedLink = $singleItem.find('link').text();
 		if (imageLink != null && imageLink != 'undefined') {
-			options = notOptions_[1];
+			options = new Object();
+			options.type = "image";
 			options.iconUrl = chrome.runtime.getURL("icon.png");
 			options.title = "";
-			options.message = title;
-			getImageSynchronousReq(imageLink, options, feedLink);
-		} else {
-			options = notOptions_[0];
+			options.message = messageVal;
+			notificationId = "id" + notID++;
+			feedLinks[notificationId] = feedLink;
+			optionsArray[notificationId] = options;
+			getImageSynchronousReq(imageLink, notificationId);
+		} /*else {
+			options = new Object();
+			options.type = "basic";
 			options.iconUrl = chrome.runtime.getURL("icon.png");
 			options.title = "";
-			options.message = title;
-			showNotification(options, feedLink);
-		}
+			options.message = messageVal;
+			options.expandedMessage = "";
+			notificationId = "id" + notID++;
+			feedLinks[notificationId] = feedLink;
+			optionsArray[notificationId] = options;
+			showNotification(notificationId);
+		}*/
 		options = null;
+		
 	});
 
 };
 
-function showNotification(options, feedLink) {
-	notificationId = "id" + notID++;
-	chrome.notifications.create(notificationId, options, creationCallback_);
-	feedLinks[notificationId] = feedLink;
+function showNotification(notifyID) {
+	setTimeout(function() {
+		chrome.notifications.create(notifyID, optionsArray[notifyID],
+				creationCallback_);
+	}, 5000);
+	
 }
 
 function openTab(url) {
@@ -100,7 +114,7 @@ function openTab(url) {
 	a.click();
 }
 
-function getImageSynchronousReq(imageLink, options, feedLink) {
+function getImageSynchronousReq(imageLink, notificationId) {
 	var img = null;
 	var xhr = new XMLHttpRequest();
 	xhr.overrideMimeType("image/png");
@@ -109,9 +123,8 @@ function getImageSynchronousReq(imageLink, options, feedLink) {
 	xhr.onload = function(e) {
 		img = document.createElement('img');
 		img.src = window.webkitURL.createObjectURL(this.response);
-		options.imageUrl = img.src;
-		console.log(options.imageUrl);
-		showNotification(options, feedLink);
+		optionsArray[notificationId].imageUrl = img.src;
+		showNotification(notificationId);
 	};
 	xhr.send();
 }
@@ -120,18 +133,10 @@ function creationCallback_(notID) {
 	console.log("Succesfully created " + notID + " notification");
 }
 
-$(document).ready(
-		function() {
-			document.getElementById("sample").addEventListener("click",
-					doSomething);
-			chrome.notifications.onClicked.addListener(createViewWindow);
-			onload = function() {
-				webView = viewWindow.contentWindow.document
-						.getElementById('myWebView');
-				webView.addEventListener("loadstart", showLoading);
-				webView.addEventListener("loadstop", stopLoading);
-			};
-		});
+$(document).ready(function() {
+	document.getElementById("sample").addEventListener("click", doSomething);
+	chrome.notifications.onClicked.addListener(createViewWindow);
+});
 
 function createViewWindow(notID) {
 	chrome.app.window
@@ -192,5 +197,5 @@ function closeWindow(viewWindow) {
 
 function doSomething() {
 	requestScores();
-	setInterval(requestScores, 3600000);
+	setInterval(requestScores, 600000);
 }
